@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Recipe Box</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#7d8f69">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Recipe Box">
+<style>
+:root{--bg:#f6efdf;--paper:#fffaf0;--sage:#7d8f69;--sage-d:#56673f;--rose:#c4877f;--honey:#e2b866;--ink:#4a3d33;--soft:#8a7b6b;--line:#dccfb4}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.55 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+ padding:env(safe-area-inset-top) 0 calc(76px + env(safe-area-inset-bottom))}
+header{padding:20px 18px 4px;text-align:center}
+h1,h2,h3{font-weight:600;font-style:italic;margin:0;color:var(--sage-d)}
+h1{font-size:1.9rem}
+h1::before,h1::after{content:"❦";color:var(--rose);font-style:normal;font-size:1rem;margin:0 .6rem;vertical-align:middle}
+main{max-width:640px;margin:0 auto;padding:10px 16px}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:10px 12px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;margin:4px 0 12px}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--sage);outline-offset:1px}
+textarea{min-height:110px;resize:vertical}
+label.f{font-size:.9rem;color:var(--soft);font-style:italic}
+button{cursor:pointer;border:0;background:none}
+.btn{background:var(--sage);color:#fff;padding:10px 18px;border-radius:999px;margin:4px 4px 4px 0}
+.btn.alt{background:var(--paper);color:var(--sage-d);border:1.5px solid var(--sage)}
+.btn.del{background:var(--paper);color:#a4544c;border:1.5px solid var(--rose)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.chip{flex:none;padding:5px 14px;border-radius:999px;background:var(--paper);border:1.5px solid var(--line);color:var(--soft)}
+.chip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.chips.tags .chip{font-size:.85rem;padding:2px 11px;border-style:dashed}
+.chips.tags .chip.on{background:var(--rose);border-color:var(--rose)}
+.card{background:var(--paper);border:1.5px dashed var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 0 var(--line);cursor:pointer}
+.card b{font-size:1.1rem;display:block}
+small,.meta{color:var(--soft);font-size:.88rem}
+.tag{color:var(--rose)}
+.panel{background:var(--paper);border:1.5px solid var(--line);border-radius:18px;padding:14px 18px;margin:12px 0}
+.panel h2{font-size:1.2rem;margin-bottom:6px}
+ul.ing{list-style:none;padding:0;margin:0}
+ul.ing li{padding:6px 0;border-bottom:1px dotted var(--line)}
+ol{padding-left:22px;margin:0}ol li{margin-bottom:10px}
+.sv{display:flex;align-items:center;gap:14px;margin:6px 0}
+.sv button{width:38px;height:38px;border-radius:50%;background:var(--sage);color:#fff;font-size:1.3rem}
+.sv span{min-width:80px;text-align:center}
+.day{background:var(--paper);border:1.5px dashed var(--line);border-radius:16px;padding:10px 14px;margin-bottom:10px}
+.day h3{font-size:1.05rem}
+.pill{display:inline-block;background:#e6ecd9;border-radius:999px;padding:2px 4px 2px 12px;margin:4px 6px 4px 0;font-size:.95rem}
+.pill button{color:var(--rose);padding:0 8px;font-size:1.1rem}
+.day select{margin:6px 0 2px;padding:6px 10px;color:var(--soft)}
+.shop{display:flex;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px dotted var(--line)}
+.shop input{width:22px;height:22px;margin:0;accent-color:var(--sage)}
+.shop.done span{text-decoration:line-through;color:var(--soft)}
+.empty{text-align:center;color:var(--soft);padding:30px 10px;font-style:italic}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--paper);border-top:2px dashed var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:10px 0 8px;color:var(--soft);font-size:.85rem}
+nav button.on{color:var(--sage-d);font-weight:700}
+nav i{display:block;font-style:normal;font-size:1.4rem}
+.top{display:flex;justify-content:space-between;align-items:center}
+a{color:var(--sage-d)}
+</style>
+</head>
+<body>
+<header><h1 id="title">Recipe Box</h1></header>
+<main id="app"></main>
+<nav id="nav">
+  <button data-a="tab" data-t="recipes"><i>🍯</i>Recipes</button>
+  <button data-a="tab" data-t="plan"><i>🌼</i>Week</button>
+  <button data-a="tab" data-t="shop"><i>🧺</i>Shopping</button>
+</nav>
+<input type="file" id="file" accept="application/json" hidden>
+
+<script>
+/* ---------- data ---------- */
+const CATS = ['Meals', 'Desserts', 'Snacks', 'Breakfast', 'Drinks'];   // edit this list to change categories
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const KEY = 'recipe-box-v1';
+const SAMPLE = {id:'sample', title:'Blackberry Crumble', category:'Desserts', tags:['summer','easy'], servings:6,
+  ingredients:['3 cups blackberries','1/2 cup sugar','1 cup flour','1/2 cup butter','1 1/2 tsp cinnamon','1 pinch salt'].join('\n'),
+  steps:['Heat the oven to 180°C.','Toss berries with half the sugar and spread in a dish.','Rub butter into flour, remaining sugar, cinnamon and salt.','Scatter over the berries and bake 35 minutes until golden.'].join('\n'),
+  notes:'Lovely with warm custard.', source:''};
+
+let db = load();
+let ui = {tab:'recipes', view:null, edit:null, q:'', cat:'All', tag:'', sv:1};
+
+function load(){
+  try { const d = JSON.parse(localStorage.getItem(KEY)); if (d && d.recipes) return d; } catch(e){}
+  return {recipes:[SAMPLE], plan:{}, checked:{}};
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){ alert('Could not save: storage is full or blocked.'); } }
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => '&#' + c.charCodeAt(0) + ';');
+const get = id => db.recipes.find(r => r.id === id);
+const lines = t => (t || '').split('\n').map(s => s.trim()).filter(Boolean);
+
+const FR = {0.125:'⅛',0.25:'¼',0.333:'⅓',0.375:'⅜',0.5:'½',0.625:'⅝',0.667:'⅔',0.75:'¾',0.875:'⅞'};
+function fmt(n){
+  const w = Math.floor(n + .03), f = n - w;
+  if (Math.abs(f) < .03) return '' + w;
+  for (const k in FR) if (Math.abs(f - k) < .03) return (w || '') + FR[k];
+  return '' + +n.toFixed(2);
+}
+// "1 1/2 cups flour" -> {q:1.5, rest:"cups flour"}; lines without a number give q:null
+function parseLine(l){
+  const m = l.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d*\.?\d+)\s*(.*)$/);
+  if (!m) return {q:null, rest:l};
+  const q = m[1].split(/\s+/).reduce((a,p) => a + (p.includes('/') ? p.split('/')[0] / p.split('/')[1] : +p), 0);
+  return {q, rest:m[2]};
+}
+const scaled = (l, r) => { const p = parseLine(l); return p.q === null ? l : fmt(p.q * r) + ' ' + p.rest; };
+
+/* ---------- views ---------- */
+const chip = (a, v, on, label) => `<button class="chip ${on?'on':''}" data-a="${a}" data-v="${esc(v)}">${esc(label ?? v)}</button>`;
+
+function listHTML(){
+  const tags = [...new Set(db.recipes.flatMap(r => r.tags))].sort();
+  return `<input id="q" type="search" placeholder="Search recipes, ingredients, tags…" value="${esc(ui.q)}">
+  <div class="chips">${['All', ...CATS].map(c => chip('cat', c, ui.cat === c)).join('')}</div>
+  ${tags.length ? `<div class="chips tags">${tags.map(t => chip('tag', t, ui.tag === t, '#' + t)).join('')}</div>` : ''}
+  <div id="list">${cards()}</div>
+  <button class="btn" data-a="new">+ New recipe</button>
+  <div class="panel"><h2>Keep your recipes safe</h2>
+    <small>Export a backup file, then import it on another device.</small><br>
+    <button class="btn alt" data-a="export">Export</button><button class="btn alt" data-a="import">Import</button></div>`;
+}
+function cards(){
+  const q = ui.q.toLowerCase();
+  const hits = db.recipes.filter(r =>
+    (ui.cat === 'All' || r.category === ui.cat) && (!ui.tag || r.tags.includes(ui.tag)) &&
+    (!q || (r.title + ' ' + r.tags.join(' ') + ' ' + r.ingredients).toLowerCase().includes(q)))
+    .sort((a, b) => a.title.localeCompare(b.title));
+  return hits.length ? hits.map(r => `<div class="card" data-a="open" data-v="${esc(r.id)}"><b>${esc(r.title)}</b>
+    <small>${esc(r.category)} · serves ${r.servings}</small>
+    <div>${r.tags.map(t => `<small class="tag">#${esc(t)} </small>`).join('')}</div></div>`).join('')
+    : '<div class="empty">No recipes here yet. Try another filter, or add a new one.</div>';
+}
+
+function detailHTML(){
+  const r = get(ui.view), ratio = ui.sv / r.servings;
+  const src = !r.source ? '' : /^https?:\/\//.test(r.source)
+    ? `<a href="${esc(r.source)}" target="_blank" rel="noopener">${esc(new URL(r.source).hostname)}</a>` : esc(r.source);
+  return `<button class="btn alt" data-a="back">‹ Back</button>
+  <h2 style="font-size:1.6rem;margin-top:8px">${esc(r.title)}</h2>
+  <div class="meta">${esc(r.category)} ${r.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join(' ')}${src ? '<br>Source: ' + src : ''}</div>
+  <div class="panel"><h2>Ingredients</h2>
+    <div class="sv"><button data-a="sv" data-v="-1" aria-label="Fewer servings">−</button><span>Serves ${ui.sv}</span><button data-a="sv" data-v="1" aria-label="More servings">+</button></div>
+    <ul class="ing">${lines(r.ingredients).map(l => `<li>${esc(scaled(l, ratio))}</li>`).join('')}</ul></div>
+  <div class="panel"><h2>Steps</h2><ol>${lines(r.steps).map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>
+  ${r.notes ? `<div class="panel"><h2>Notes</h2><div style="white-space:pre-wrap">${esc(r.notes)}</div></div>` : ''}
+  <button class="btn" data-a="edit">Edit</button><button class="btn del" data-a="del">Delete</button>`;
+}
+
+function editHTML(){
+  const r = ui.edit;
+  return `<button class="btn alt" data-a="cancel">‹ Cancel</button>
+  <label class="f">Title</label><input id="f-title" value="${esc(r.title)}">
+  <label class="f">Category</label><select id="f-cat">${CATS.map(c => `<option ${c === r.category ? 'selected' : ''}>${c}</option>`).join('')}</select>
+  <label class="f">Tags (separated by commas)</label><input id="f-tags" value="${esc(r.tags.join(', '))}">
+  <label class="f">Servings the recipe makes</label><input id="f-sv" type="number" min="1" value="${r.servings}">
+  <label class="f">Ingredients (one per line, like “1 1/2 cups flour”)</label><textarea id="f-ing">${esc(r.ingredients)}</textarea>
+  <label class="f">Steps (one per line)</label><textarea id="f-steps">${esc(r.steps)}</textarea>
+  <label class="f">Notes</label><textarea id="f-notes">${esc(r.notes)}</textarea>
+  <label class="f">Source (link or book name)</label><input id="f-src" value="${esc(r.source)}">
+  <button class="btn" data-a="save">Save recipe</button>`;
+}
+
+function planHTML(){
+  const sorted = [...db.recipes].sort((a, b) => a.title.localeCompare(b.title));
+  return `<div class="top"><h2>This week</h2><button class="btn alt" data-a="clearplan">Clear week</button></div>` +
+  DAYS.map(d => `<div class="day"><h3>${d}</h3>
+    ${(db.plan[d] || []).map((id, i) => get(id) ? `<span class="pill">${esc(get(id).title)}<button data-a="rm" data-d="${d}" data-i="${i}" aria-label="Remove">×</button></span>` : '').join('')}
+    <select data-a="add" data-d="${d}"><option value="">+ add a recipe</option>${sorted.map(r => `<option value="${esc(r.id)}">${esc(r.title)}</option>`).join('')}</select></div>`).join('');
+}
+
+function shopItems(){
+  const map = {};
+  DAYS.forEach(d => (db.plan[d] || []).forEach(id => { const r = get(id); if (!r) return;
+    lines(r.ingredients).forEach(l => { const p = parseLine(l), k = p.rest.toLowerCase();
+      map[k] = map[k] || {rest:p.rest, q:null, n:0}; map[k].n++;
+      if (p.q !== null) map[k].q = (map[k].q || 0) + p.q; }); }));
+  return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, v]) => ({k, text: v.q !== null ? fmt(v.q) + ' ' + v.rest : v.rest + (v.n > 1 ? ' (×' + v.n + ')' : '')}));
+}
+function shopHTML(){
+  const items = shopItems();
+  if (!items.length) return '<div class="empty">Pick some recipes in the Week tab and your shopping list will appear here.</div>';
+  return `<div class="top"><h2>Shopping list</h2><button class="btn alt" data-a="uncheck">Uncheck all</button></div>` +
+    items.map(i => `<label class="shop ${db.checked[i.k] ? 'done' : ''}"><input type="checkbox" data-a="chk" data-k="${esc(i.k)}" ${db.checked[i.k] ? 'checked' : ''}><span>${esc(i.text)}</span></label>`).join('');
+}
+
+function render(top = true){
+  $('#app').innerHTML = ui.edit ? editHTML() : ui.view ? detailHTML() : {recipes:listHTML, plan:planHTML, shop:shopHTML}[ui.tab]();
+  $('#nav').style.display = (ui.edit || ui.view) ? 'none' : 'flex';
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.t === ui.tab));
+  $('#title').textContent = {recipes:'Recipe Box', plan:'Weekly Menu', shop:'Market Basket'}[ui.tab];
+  if (top) scrollTo(0, 0);
+}
+
+/* ---------- actions ---------- */
+const act = {
+  tab: d => { ui.tab = d.t; render(); },
+  cat: d => { ui.cat = d.v; render(false); },
+  tag: d => { ui.tag = ui.tag === d.v ? '' : d.v; render(false); },
+  open: d => { ui.view = d.v; ui.sv = get(d.v).servings; render(); },
+  back: () => { ui.view = null; render(); },
+  sv: d => { ui.sv = Math.max(1, ui.sv + +d.v); render(false); },
+  new: () => { ui.edit = {id:'', title:'', category:CATS[0], tags:[], servings:4, ingredients:'', steps:'', notes:'', source:''}; render(); },
+  edit: () => { ui.edit = get(ui.view); render(); },
+  cancel: () => { ui.edit = null; render(); },
+  save: () => {
+    const title = $('#f-title').value.trim();
+    if (!title) return alert('Please give the recipe a title.');
+    const r = {id: ui.edit.id || Date.now().toString(36), title, category: $('#f-cat').value,
+      tags: [...new Set($('#f-tags').value.split(',').map(t => t.trim().toLowerCase().replace(/^#/, '')).filter(Boolean))],
+      servings: Math.max(1, +$('#f-sv').value || 1), ingredients: $('#f-ing').value, steps: $('#f-steps').value,
+      notes: $('#f-notes').value, source: $('#f-src').value.trim()};
+    const i = db.recipes.findIndex(x => x.id === r.id);
+    i < 0 ? db.recipes.push(r) : db.recipes[i] = r;
+    save(); ui.edit = null; ui.view = r.id; ui.sv = r.servings; render();
+  },
+  del: () => { if (!confirm('Delete this recipe?')) return;
+    db.recipes = db.recipes.filter(r => r.id !== ui.view);
+    DAYS.forEach(d => db.plan[d] = (db.plan[d] || []).filter(id => id !== ui.view));
+    save(); ui.view = null; render(); },
+  rm: d => { db.plan[d.d].splice(+d.i, 1); save(); render(false); },
+  clearplan: () => { if (confirm('Clear the whole week?')) { db.plan = {}; save(); render(false); } },
+  uncheck: () => { db.checked = {}; save(); render(false); },
+  export: () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 2)], {type:'application/json'}));
+    a.download = 'recipe-box-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click(); URL.revokeObjectURL(a.href);
+  },
+  import: () => $('#file').click(),
+};
+
+document.addEventListener('click', e => { const b = e.target.closest('button[data-a], .card[data-a]'); if (b) act[b.dataset.a](b.dataset); });
+document.addEventListener('input', e => { if (e.target.id === 'q') { ui.q = e.target.value; $('#list').innerHTML = cards(); } });
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.a === 'add' && t.value) { (db.plan[t.dataset.d] = db.plan[t.dataset.d] || []).push(t.value); save(); render(false); }
+  if (t.dataset.a === 'chk') { db.checked[t.dataset.k] = t.checked; t.closest('label').classList.toggle('done', t.checked); save(); }
+  if (t.id === 'file' && t.files[0]) {
+    const rd = new FileReader();
+    rd.onload = () => { try {
+      const d = JSON.parse(rd.result);
+      if (!Array.isArray(d.recipes)) throw 0;
+      if (!confirm('Add ' + d.recipes.length + ' recipes from this backup? Recipes that already exist will be updated, and the weekly plan will be replaced.')) return;
+      d.recipes.forEach(r => { const i = db.recipes.findIndex(x => x.id === r.id); i < 0 ? db.recipes.push(r) : db.recipes[i] = r; });
+      db.plan = d.plan || db.plan; save(); render();
+    } catch(err) { alert('That file is not a Recipe Box backup.'); } t.value = ''; };
+    rd.readAsText(t.files[0]);
+  }
+});
+
+render();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
